@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no" />
+  <title>Game 200</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <div id="app">
+    <!-- Authentication -->
+    <section id="screen-auth" class="screen active">
+      <header class="brand">
+        <h1>Game 200</h1>
+        <p class="tagline">Digital Edition</p>
+      </header>
+      <form id="auth-form" class="panel">
+        <label for="player-name">Your name</label>
+        <input id="player-name" type="text" maxlength="20" placeholder="Enter name" required autocomplete="nickname" />
+        <label for="room-code">Room code (join)</label>
+        <input id="room-code" type="text" maxlength="6" placeholder="Leave blank to create" autocomplete="off" />
+        <p id="auth-error" class="error hidden"></p>
+        <button type="submit" class="btn primary">Enter Game</button>
+      </form>
+    </section>
+
+    <!-- Lobby -->
+    <section id="screen-lobby" class="screen">
+      <header class="top-bar">
+        <span class="room-label">Room <strong id="lobby-room-code"></strong></span>
+        <span id="lobby-phase" class="badge">Lobby</span>
+      </header>
+      <div class="panel flex-grow">
+        <h2>Players</h2>
+        <ul id="player-list" class="player-list"></ul>
+        <p id="lobby-hint" class="hint">Waiting for host to start…</p>
+        <button id="btn-start" class="btn primary hidden">Start Game</button>
+        <button id="btn-next-round" class="btn primary hidden">Next Round</button>
+      </div>
+      <div id="showdown-summary" class="panel showdown hidden"></div>
+    </section>
+
+    <!-- Game Board -->
+    <section id="screen-game" class="screen">
+      <header class="top-bar">
+        <div class="scores-strip" id="scores-strip"></div>
+        <div class="turn-bar">
+          <span id="turn-indicator">Waiting…</span>
+          <span id="deck-info" class="muted"></span>
+        </div>
+      </header>
+
+      <div class="table-area">
+        <div class="pile discard-pile" id="discard-pile">
+          <span class="pile-label">Discard</span>
+          <div id="discard-top" class="card-slot empty">—</div>
+        </div>
+        <div class="pile deck-pile" id="deck-pile">
+          <span class="pile-label">Deck</span>
+          <div class="card-slot deck-back"><span id="deck-count">0</span></div>
+        </div>
+      </div>
+
+      <div id="opponents" class="opponents"></div>
+
+      <div class="hand-area">
+        <p class="hand-label">Your hand <span id="hand-total" class="muted"></span></p>
+        <div id="player-hand" class="hand"></div>
+      </div>
+
+      <div id="action-panel" class="action-panel hidden">
+        <p id="action-hint" class="hint">Select cards to drop, then draw.</p>
+        <div class="action-buttons">
+          <div class="action-row-drop">
+            <button id="btn-drop-only" class="btn primary hidden" disabled>Drop (no draw)</button>
+            <button id="btn-draw-deck" class="btn secondary hidden" disabled>Drop & Draw Deck</button>
+            <button id="btn-draw-discard" class="btn secondary hidden" disabled>Drop & Take Discard</button>
+          </div>
+          <button id="btn-show" class="btn warn action-show hidden">Call Show</button>
+        </div>
+      </div>
+
+      <div id="game-message" class="toast hidden"></div>
+    </section>
+
+    <!-- Game Over overlay -->
+    <div id="overlay-gameover" class="overlay hidden">
+      <div class="overlay-card">
+        <h2 id="gameover-title">Game Over</h2>
+        <p id="gameover-body"></p>
+        <button id="btn-gameover-close" class="btn primary">Back to Lobby</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/socket.io/socket.io.js"></script>
+  <script src="/js/meld.js"></script>
+  <script src="/js/animations.js"></script>
+  <script src="/js/app.js?v=5"></script>
+</body>
+</html>
