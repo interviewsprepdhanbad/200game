@@ -1,5 +1,3 @@
-/* Card flight animations for drop & draw */
-
 function getFlyLayer() {
   let layer = document.getElementById('card-fly-layer');
   if (!layer) {
@@ -16,6 +14,13 @@ function centerOf(rect) {
     x: rect.left + rect.width / 2,
     y: rect.top + rect.height / 2,
   };
+}
+
+function placeFlying(el, rect) {
+  el.style.left = `${rect.left}px`;
+  el.style.top = `${rect.top}px`;
+  el.style.width = `${rect.width}px`;
+  el.style.height = `${rect.height}px`;
 }
 
 function createFlyingCard(cardEl, rect) {
@@ -48,30 +53,10 @@ function flyElement(el, fromRect, toRect, duration = 420) {
 function fadeOut(el, ms = 200) {
   el.style.transition = `opacity ${ms}ms ease`;
   el.style.opacity = '0';
-  return new Promise((r) => setTimeout(r, ms));
+  return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-function placeFlying(el, rect) {
-  el.style.left = `${rect.left}px`;
-  el.style.top = `${rect.top}px`;
-  el.style.width = `${rect.width}px`;
-  el.style.height = `${rect.height}px`;
-}
-
-/**
- * @param {object} opts
- * @param {object[]} opts.droppedCards
- * @param {DOMRect[]} opts.sourceRects
- * @param {DOMRect} opts.discardRect
- * @param {'deck'|'discard'} opts.drawFrom
- * @param {DOMRect} opts.drawSourceRect
- * @param {DOMRect} opts.handRect
- * @param {object|null} opts.drawnCard
- * @param {boolean} opts.showDrawnFace
- * @param {function} opts.renderCardFace
- * @param {function} opts.renderCardBack
- */
-async function playDropAndDrawAnimation(opts) {
+export async function playDropAndDrawAnimation(opts) {
   const layer = getFlyLayer();
   const {
     droppedCards = [],
@@ -87,8 +72,8 @@ async function playDropAndDrawAnimation(opts) {
   } = opts;
 
   const flyers = droppedCards
-    .map((card, i) => {
-      const rect = sourceRects[i];
+    .map((card, index) => {
+      const rect = sourceRects[index];
       if (!rect || rect.width <= 0) return null;
       return createFlyingCard(renderCardFace(card), rect);
     })
@@ -96,8 +81,8 @@ async function playDropAndDrawAnimation(opts) {
 
   if (flyers.length && discardRect.width > 0) {
     await Promise.all(
-      flyers.map(({ el, rect }, i) =>
-        new Promise((r) => setTimeout(r, i * 60)).then(() =>
+      flyers.map(({ el, rect }, index) =>
+        new Promise((resolve) => setTimeout(resolve, index * 60)).then(() =>
           flyElement(el, rect, discardRect, 360)
         )
       )
@@ -107,9 +92,7 @@ async function playDropAndDrawAnimation(opts) {
   }
 
   if (drawnCard && drawSourceRect.width > 0 && handRect.width > 0) {
-    const incoming = showDrawnFace
-      ? renderCardFace(drawnCard)
-      : renderCardBack();
+    const incoming = showDrawnFace ? renderCardFace(drawnCard) : renderCardBack();
     incoming.classList.add('flying-card');
     placeFlying(incoming, drawSourceRect);
     layer.appendChild(incoming);
@@ -119,5 +102,4 @@ async function playDropAndDrawAnimation(opts) {
     await fadeOut(incoming, 120);
     incoming.remove();
   }
-
 }
