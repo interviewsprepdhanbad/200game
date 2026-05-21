@@ -18,16 +18,11 @@ function centerOf(rect) {
   };
 }
 
-function cloneFlyingCard(sourceEl) {
-  const rect = sourceEl.getBoundingClientRect();
-  const clone = sourceEl.cloneNode(true);
-  clone.classList.add('flying-card');
-  clone.style.left = `${rect.left}px`;
-  clone.style.top = `${rect.top}px`;
-  clone.style.width = `${rect.width}px`;
-  clone.style.height = `${rect.height}px`;
-  getFlyLayer().appendChild(clone);
-  return { el: clone, rect };
+function createFlyingCard(cardEl, rect) {
+  cardEl.classList.add('flying-card');
+  placeFlying(cardEl, rect);
+  getFlyLayer().appendChild(cardEl);
+  return { el: cardEl, rect };
 }
 
 function flyElement(el, fromRect, toRect, duration = 420) {
@@ -65,7 +60,8 @@ function placeFlying(el, rect) {
 
 /**
  * @param {object} opts
- * @param {HTMLElement[]} opts.sourceEls
+ * @param {object[]} opts.droppedCards
+ * @param {DOMRect[]} opts.sourceRects
  * @param {DOMRect} opts.discardRect
  * @param {'deck'|'discard'} opts.drawFrom
  * @param {DOMRect} opts.drawSourceRect
@@ -78,7 +74,8 @@ function placeFlying(el, rect) {
 async function playDropAndDrawAnimation(opts) {
   const layer = getFlyLayer();
   const {
-    sourceEls,
+    droppedCards = [],
+    sourceRects = [],
     discardRect,
     drawFrom,
     drawSourceRect,
@@ -89,12 +86,13 @@ async function playDropAndDrawAnimation(opts) {
     renderCardBack,
   } = opts;
 
-  const handEl = document.getElementById('player-hand');
-  handEl?.classList.add('animating');
-
-  sourceEls.forEach((el) => el?.classList.add('card-ghost'));
-
-  const flyers = sourceEls.filter(Boolean).map((el) => cloneFlyingCard(el));
+  const flyers = droppedCards
+    .map((card, i) => {
+      const rect = sourceRects[i];
+      if (!rect || rect.width <= 0) return null;
+      return createFlyingCard(renderCardFace(card), rect);
+    })
+    .filter(Boolean);
 
   if (flyers.length && discardRect.width > 0) {
     await Promise.all(
@@ -122,6 +120,4 @@ async function playDropAndDrawAnimation(opts) {
     incoming.remove();
   }
 
-  handEl?.classList.remove('animating');
-  sourceEls.forEach((el) => el?.classList.remove('card-ghost'));
 }

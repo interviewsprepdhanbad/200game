@@ -21,7 +21,8 @@ Open `http://localhost:3000` on your phone or desktop. Create a room (leave code
 | Rule | Detail |
 |------|--------|
 | Hand size | 5 cards per round |
-| Deck | 1×54 (2–4 players), 2×108 (5+ players) |
+| Deck | 1×54 (1–4 players), 2×108 (5–9), 3×162 (10–14), +1 deck per 5 players |
+| Empty deck | Discard pile (except top card) is shuffled back into the draw pile |
 | Points | Joker 0, Ace 1, 2–10 face, J/Q/K 10 |
 | Turn | Drop valid meld + draw 1 (deck or discard top); **or** drop matching discard rank with no draw; **or** Call Show at turn start |
 | Show lock | Disabled until `turnCount >= playerCount` |

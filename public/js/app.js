@@ -72,6 +72,10 @@ function suitSymbol(suit) {
   return SUIT_SYMBOL[suit] || '';
 }
 
+function isJokerCard(card) {
+  return card?.isJoker === true || card?.rank === 'Joker';
+}
+
 function selectedCardsFromHand(hand) {
   return hand.filter((c) => selectedCardIds.has(c.id));
 }
@@ -80,7 +84,7 @@ function renderCard(card, selectable, hand) {
   const div = document.createElement('div');
   div.className = 'card';
   div.dataset.id = card.id;
-  if (card.isJoker) {
+  if (isJokerCard(card)) {
     div.classList.add('joker');
     div.textContent = '🃏';
   } else {
@@ -121,7 +125,7 @@ function toggleCard(id, hand) {
 function handPoints(hand) {
   if (!hand) return 0;
   return hand.reduce((s, c) => {
-    if (c.isJoker) return s;
+    if (isJokerCard(c)) return s;
     if (c.rank === 'A') return s + 1;
     if (['J', 'Q', 'K'].includes(c.rank)) return s + 10;
     return s + parseInt(c.rank, 10);
@@ -148,6 +152,16 @@ function selectionMatchesDiscard(hand) {
 
 function renderAuth() {
   showScreen('auth');
+}
+
+function formatLowestCatchers(catchers) {
+  if (!catchers?.length) return 'lowest hand unknown';
+  const total = catchers[0].total;
+  if (catchers.length === 1) {
+    return `${catchers[0].name} has ${total} points`;
+  }
+  const names = catchers.map((c) => c.name).join(' & ');
+  return `${names} have ${total} points`;
 }
 
 function renderLobby() {
@@ -211,7 +225,7 @@ function renderLobby() {
       const pl = roomState.players.find((p) => p.id === h.playerId);
       const rp = h.roundPoints ?? roomState.players.find((p) => p.id === h.playerId)?.roundPoints;
       if (s.caught && h.playerId === s.callerId) {
-        html += `${pl?.name}: <strong>+${rp ?? 50}</strong> penalty (hand ${h.total} pts not counted)<br>`;
+        html += `${pl?.name}: <strong>+${rp ?? 50}</strong> penalty (${formatLowestCatchers(s.lowestCatchers)})<br>`;
       } else {
         html += `${pl?.name}: ${h.total} pts → +${rp ?? '?'}<br>`;
       }
@@ -308,12 +322,12 @@ function renderGame() {
     const selCount = selectedCardIds.size;
     $('#action-hint').textContent =
       selCount === 0
-        ? 'Tap hand cards: 1 card, same rank (2+), or same-suit run (3+) — then draw'
+        ? 'Tap hand cards: 1 card or same rank (2+) — then draw'
         : matchDiscard
           ? 'Matches discard rank — drop without drawing'
           : valid
             ? 'Valid drop — choose deck or discard pile to draw 1 card'
-            : 'Keep selecting: need same rank (set) or same-suit run (3+)';
+            : 'Keep selecting: need same rank (set)';
     btnShow.classList.toggle('hidden', !roomState.canShow);
     btnDropOnly.classList.toggle('hidden', !matchDiscard);
     btnDeck.classList.toggle('hidden', matchDiscard);
@@ -341,9 +355,11 @@ function flashDiscardPile() {
 
 function captureDropAnimationTargets(drawFrom) {
   const handEl = $('#player-hand');
-  const sourceEls = [...selectedCardIds]
-    .map((id) => handEl.querySelector(`.card[data-id="${id}"]`))
-    .filter(Boolean);
+  const hand = me()?.hand || [];
+  const droppedCards = selectedCardsFromHand(hand);
+  const sourceRects = droppedCards
+    .map((c) => handEl.querySelector(`.card[data-id="${c.id}"]`)?.getBoundingClientRect())
+    .filter((r) => r && r.width > 0);
   const discardSlot = $('#discard-top');
   const deckBack = $('#deck-pile .deck-back');
 
@@ -366,7 +382,8 @@ function captureDropAnimationTargets(drawFrom) {
 
   return {
     drawFrom,
-    sourceEls,
+    droppedCards,
+    sourceRects,
     takenDiscardCard,
     discardRect: discardSlot.getBoundingClientRect(),
     drawSourceRect: drawSourceEl.getBoundingClientRect(),
@@ -384,7 +401,8 @@ async function runDropAnimation(state, animMeta) {
     const handEl = $('#player-hand');
     const handRect = handEl.getBoundingClientRect();
     animMeta = {
-      sourceEls: [],
+      droppedCards: [],
+      sourceRects: [],
       discardRect: $('#discard-top').getBoundingClientRect(),
       drawFrom: la.drawFrom,
       drawSourceRect:
@@ -407,7 +425,8 @@ async function runDropAnimation(state, animMeta) {
 
   try {
     await playDropAndDrawAnimation({
-      sourceEls: animMeta.sourceEls || [],
+      droppedCards: animMeta.droppedCards || [],
+      sourceRects: animMeta.sourceRects || [],
       discardRect: animMeta.discardRect,
       drawFrom: la.drawFrom,
       drawSourceRect: animMeta.drawSourceRect,
@@ -437,6 +456,7 @@ async function handleIncomingState(state) {
     pendingDropAnim = null;
     roomState = state;
     myPlayerId = state.yourPlayerId || myPlayerId || getPlayerId();
+    render();
     await runDropAnimation(state, meta);
     render();
     return;
@@ -445,6 +465,7 @@ async function handleIncomingState(state) {
   if (isOthersDrop && state.phase === 'playing') {
     roomState = state;
     myPlayerId = state.yourPlayerId || myPlayerId || getPlayerId();
+    render();
     await runDropAnimation(state, null);
     render();
     return;
@@ -542,7 +563,7 @@ function submitDrop(drawFrom) {
   if (isAnimating) return;
   const hand = me()?.hand || [];
   if (!selectionIsValid(hand)) {
-    showToast('Select a valid drop: 1 card, same rank, or same-suit run');
+    showToast('Select a valid drop: 1 card or same rank');
     return;
   }
 
