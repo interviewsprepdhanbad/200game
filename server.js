@@ -58,7 +58,7 @@ io.on('connection', (socket) => {
     socket.playerName = name;
     const room = roomManager.createRoom(playerId, name);
     attachSocketToRoom(socket, room.code, playerId);
-    cb?.({ ok: true, roomCode: room.code, playerId });
+    cb?.({ ok: true, roomCode: room.code, playerId, phase: room.phase });
     emitRoomState(room.code);
   });
 
@@ -75,7 +75,7 @@ io.on('connection', (socket) => {
       return;
     }
     attachSocketToRoom(socket, result.room.code, playerId);
-    cb?.({ ok: true, roomCode: result.room.code, playerId });
+    cb?.({ ok: true, roomCode: result.room.code, playerId, phase: result.room.phase });
     emitRoomState(result.room.code);
   });
 

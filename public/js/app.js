@@ -17,6 +17,8 @@ let selectedCardIds = new Set();
 let myPlayerId = null;
 let pendingDropAnim = null;
 let isAnimating = false;
+let socketInRoom = false;
+let restoringSession = false;
 
 const $ = (sel) => document.querySelector(sel);
 
@@ -37,16 +39,50 @@ function getPlayerId() {
   return id;
 }
 
-function saveSession(roomCode, playerName) {
-  sessionStorage.setItem(SESSION_KEY, JSON.stringify({ roomCode, playerName }));
+function saveSession(roomCode, playerName, phase) {
+  if (!roomCode || !playerName) return;
+  localStorage.setItem(
+    SESSION_KEY,
+    JSON.stringify({
+      roomCode: String(roomCode).toUpperCase(),
+      playerName,
+      phase: phase || null,
+    })
+  );
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+  try {
+    sessionStorage.removeItem(SESSION_KEY);
+  } catch (_) {}
 }
 
 function loadSession() {
   try {
-    return JSON.parse(sessionStorage.getItem(SESSION_KEY) || 'null');
+    let raw = localStorage.getItem(SESSION_KEY);
+    if (!raw) {
+      const legacy = sessionStorage.getItem(SESSION_KEY);
+      if (legacy) {
+        localStorage.setItem(SESSION_KEY, legacy);
+        sessionStorage.removeItem(SESSION_KEY);
+        raw = legacy;
+      }
+    }
+    return JSON.parse(raw || 'null');
   } catch {
     return null;
   }
+}
+
+function showReconnecting(detail) {
+  const el = $('#overlay-reconnecting');
+  if (detail) $('#reconnecting-detail').textContent = detail;
+  el.classList.remove('hidden');
+}
+
+function hideReconnecting() {
+  $('#overlay-reconnecting').classList.add('hidden');
 }
 
 function showScreen(name) {
@@ -444,6 +480,15 @@ async function runDropAnimation(state, animMeta) {
   $('#screen-game').classList.remove('is-animating');
 }
 
+function applyRoomState(state) {
+  roomState = state;
+  myPlayerId = state.yourPlayerId || myPlayerId || getPlayerId();
+  socketInRoom = true;
+  const session = loadSession();
+  saveSession(state.code, me()?.name || session?.playerName, state.phase);
+  hideReconnecting();
+}
+
 async function handleIncomingState(state) {
   const la = state.lastAction;
   const isMyDrop = pendingDropAnim && la?.type === 'dropSwap' && la.playerId === myPlayerId;
@@ -454,8 +499,7 @@ async function handleIncomingState(state) {
   if (isMyDrop) {
     const meta = pendingDropAnim;
     pendingDropAnim = null;
-    roomState = state;
-    myPlayerId = state.yourPlayerId || myPlayerId || getPlayerId();
+    applyRoomState(state);
     render();
     await runDropAnimation(state, meta);
     render();
@@ -463,8 +507,7 @@ async function handleIncomingState(state) {
   }
 
   if (isOthersDrop && state.phase === 'playing') {
-    roomState = state;
-    myPlayerId = state.yourPlayerId || myPlayerId || getPlayerId();
+    applyRoomState(state);
     render();
     await runDropAnimation(state, null);
     render();
@@ -473,8 +516,7 @@ async function handleIncomingState(state) {
 
   if (pendingDropAnim) pendingDropAnim = null;
 
-  roomState = state;
-  myPlayerId = state.yourPlayerId || myPlayerId || getPlayerId();
+  applyRoomState(state);
   render();
 }
 
@@ -489,36 +531,77 @@ function enterRoom(playerName, roomCode, cb) {
   const payload = { playerName, playerId };
   const done = (res) => {
     if (!res?.ok) {
+      socketInRoom = false;
       cb?.(res);
       return;
     }
     myPlayerId = res.playerId || playerId;
-    if (res.roomCode) saveSession(res.roomCode, playerName);
+    socketInRoom = true;
+    if (res.roomCode) saveSession(res.roomCode, playerName, res.phase);
     cb?.(res);
   };
   if (roomCode) socket.emit('joinRoom', { ...payload, roomCode }, done);
   else socket.emit('createRoom', payload, done);
 }
 
+function tryRestoreSession() {
+  const session = loadSession();
+  if (!session?.roomCode || !session?.playerName || !socket?.connected) return;
+  if (socketInRoom || restoringSession) return;
+
+  restoringSession = true;
+  showReconnecting(`Rejoining room ${session.roomCode}…`);
+  $('#player-name').value = session.playerName;
+  $('#room-code').value = session.roomCode;
+
+  enterRoom(session.playerName, session.roomCode, (res) => {
+    restoringSession = false;
+    if (!res?.ok) {
+      hideReconnecting();
+      const err = res?.error || 'Could not rejoin';
+      if (/not found|closed/i.test(err)) clearSession();
+      showError(err);
+      roomState = null;
+      renderAuth();
+      return;
+    }
+    if (res.phase === 'playing') showScreen('game');
+  });
+}
+
 function connect() {
-  socket = io();
+  socket = io({ reconnection: true, reconnectionAttempts: Infinity });
+
+  socket.on('connect', () => {
+    tryRestoreSession();
+  });
+
+  socket.on('disconnect', () => {
+    socketInRoom = false;
+  });
+
   socket.on('roomState', (state) => {
     handleIncomingState(state);
   });
+
   socket.on('roomClosed', () => {
     showToast('Room closed');
     roomState = null;
-    sessionStorage.removeItem(SESSION_KEY);
+    socketInRoom = false;
+    clearSession();
+    hideReconnecting();
     renderAuth();
   });
 
   const session = loadSession();
-  if (session?.roomCode && session?.playerName) {
-    $('#player-name').value = session.playerName;
-    $('#room-code').value = session.roomCode;
-    enterRoom(session.playerName, session.roomCode, (res) => {
-      if (res?.ok) showScreen('lobby');
-    });
+  if (session) {
+    $('#player-name').value = session.playerName || '';
+    $('#room-code').value = session.roomCode || '';
+    if (session.roomCode && session.playerName) {
+      showReconnecting(
+        session.phase === 'playing' ? 'Restoring your game…' : `Rejoining room ${session.roomCode}…`
+      );
+    }
   }
 }
 
@@ -533,9 +616,12 @@ $('#auth-form').addEventListener('submit', (e) => {
   }
   if (!socket) connect();
 
+  showReconnecting(code ? `Joining room ${code}…` : 'Creating room…');
   enterRoom(name, code || null, (res) => {
-    if (!res?.ok) showError(res?.error || 'Could not join');
-    else showScreen('lobby');
+    if (!res?.ok) {
+      hideReconnecting();
+      showError(res?.error || 'Could not join');
+    }
   });
 });
 
