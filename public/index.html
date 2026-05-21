@@ -83,6 +83,14 @@
       <div id="game-message" class="toast hidden"></div>
     </section>
 
+    <!-- Reconnecting overlay -->
+    <div id="overlay-reconnecting" class="overlay hidden">
+      <div class="overlay-card">
+        <h2>Reconnecting…</h2>
+        <p id="reconnecting-detail">Restoring your game</p>
+      </div>
+    </div>
+
     <!-- Game Over overlay -->
     <div id="overlay-gameover" class="overlay hidden">
       <div class="overlay-card">
@@ -94,8 +102,6 @@
   </div>
 
   <script src="/socket.io/socket.io.js"></script>
-  <script src="/js/meld.js"></script>
-  <script src="/js/animations.js?v=6"></script>
-  <script src="/js/app.js?v=6"></script>
+  <script type="module" src="/js/main.js"></script>
 </body>
 </html>
