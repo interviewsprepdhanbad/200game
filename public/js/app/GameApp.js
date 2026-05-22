@@ -39,23 +39,9 @@ export class GameApp {
 
   bindUi() {
     $('#auth-form').addEventListener('submit', (event) => this.onAuthSubmit(event));
-    $('#btn-start').addEventListener('click', () => {
-      const activeToggle = $('.btn-toggle.active');
-      const turnTimeLimit = activeToggle ? activeToggle.dataset.value : 30;
-      this.emitAction('startGame', { turnTimeLimit });
-    });
+    $('#btn-start').addEventListener('click', () => this.emitAction('startGame'));
     $('#btn-next-round').addEventListener('click', () => this.emitAction('nextRound'));
     $('#btn-reset-game').addEventListener('click', () => this.emitAction('resetGame'));
-    $('#btn-exit-lobby').addEventListener('click', () => this.onExitRoom());
-    $('#btn-exit-game').addEventListener('click', () => this.onExitRoom());
-
-    document.querySelectorAll('.btn-toggle').forEach((btn) => {
-      btn.addEventListener('click', (e) => {
-        document.querySelectorAll('.btn-toggle').forEach((b) => b.classList.remove('active'));
-        e.target.classList.add('active');
-      });
-    });
-
     $('#btn-show').addEventListener('click', () => this.onCallShow());
     $('#btn-drop-only').addEventListener('click', () => this.submitDrop('none'));
     $('#btn-draw-deck').addEventListener('click', () => this.submitDrop('deck'));
@@ -91,24 +77,6 @@ export class GameApp {
     });
     this.socket.on('roomState', (state) => this.handleRoomState(state));
     this.socket.on('roomClosed', () => this.handleRoomClosed());
-
-    // Timer update loop
-    setInterval(() => this.updateTimerDisplay(), 1000);
-  }
-
-  updateTimerDisplay() {
-    const room = this.state.room;
-    if (!room || room.phase !== GAME_PHASE.PLAYING || !room.turnStartTime) {
-      $('#turn-timer').textContent = '';
-      return;
-    }
-
-    const elapsed = Math.floor((Date.now() - room.turnStartTime) / 1000);
-    const remaining = Math.max(0, room.turnTimeLimit - elapsed);
-    
-    const timerEl = $('#turn-timer');
-    timerEl.textContent = `${remaining}s`;
-    timerEl.classList.toggle('low', remaining <= 5);
   }
 
   render() {
@@ -244,20 +212,9 @@ export class GameApp {
     }
   }
 
-  emitAction(eventName, payload = {}) {
-    this.socket.emit(eventName, payload, (response) => {
+  emitAction(eventName) {
+    this.socket.emit(eventName, {}, (response) => {
       if (!response?.ok) showToast(response.error);
-    });
-  }
-
-  onExitRoom() {
-    if (!confirm('Leave this game?')) return;
-    this.socket.emit('leaveRoom', {}, (response) => {
-      if (response?.ok) {
-        this.state.clearRoom();
-        clearSession();
-        renderAuthScreen();
-      }
     });
   }
 

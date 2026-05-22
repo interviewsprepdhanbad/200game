@@ -60,8 +60,6 @@ export function renderLobbyScreen(state) {
   const roundEnd = room.phase === GAME_PHASE.ROUND_END;
   const finished = room.phase === GAME_PHASE.FINISHED;
 
-  $('#lobby-options').classList.toggle('hidden', playing || roundEnd || finished);
-  
   $('#btn-start').classList.toggle('hidden', playing || roundEnd || finished);
   $('#btn-next-round').classList.toggle('hidden', !roundEnd);
   $('#btn-reset-game').classList.toggle('hidden', !finished);
@@ -85,7 +83,7 @@ export function renderLobbyScreen(state) {
     if (s.caught) {
       html += `<span class="caught">Caught! Someone has STRICTLY less than ${s.callerPoints} pts. Caller adds 50 pts.</span><br>`;
     } else {
-      html += `Successful Show — caller and tied players score 0.<br>`;
+      html += `Successful Show — caller scores 0 (ties are safe).<br>`;
     }
     for (const h of s.hands) {
       const pl = room.players.find((p) => p.id === h.playerId);
