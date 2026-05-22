@@ -26,7 +26,7 @@ export function createCardElement(card, { selectable, selected, onSelect }) {
 
   if (isJokerCard(card)) {
     div.classList.add('joker');
-    div.textContent = '🃏';
+    div.innerHTML = '<span class="rank">JOKER</span><span class="suit">🃏</span>';
   } else {
     if (RED_SUITS.has(card.suit)) div.classList.add('red');
     div.innerHTML = `<span class="rank">${card.rank}</span><span class="suit">${suitSymbol(card.suit)}</span>`;

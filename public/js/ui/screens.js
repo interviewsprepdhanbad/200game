@@ -62,6 +62,7 @@ export function renderLobbyScreen(state) {
 
   $('#btn-start').classList.toggle('hidden', !host || playing || roundEnd || finished);
   $('#btn-next-round').classList.toggle('hidden', !host || !roundEnd);
+  $('#btn-reset-game').classList.toggle('hidden', !host || !finished);
   $('#lobby-hint').classList.toggle(
     'hidden',
     (host && room.phase === GAME_PHASE.LOBBY) || roundEnd || finished
@@ -78,9 +79,9 @@ export function renderLobbyScreen(state) {
     showdownEl.classList.remove('hidden');
     const s = room.showdown;
     const caller = room.players.find((p) => p.id === s.callerId);
-    let html = `<strong>Showdown</strong> — ${caller?.name || 'Player'} called Show<br>`;
+    let html = `<strong>Showdown</strong> — ${caller?.name || 'Player'} called Show (${s.callerPoints} pts)<br>`;
     if (s.caught) {
-      html += '<span class="caught">Caught! Caller adds 50 pts only (hand not scored).</span><br>';
+      html += `<span class="caught">Caught! Caller was at ${s.callerPoints} pts but someone has less. Caller adds 50 pts.</span><br>`;
     } else {
       html += 'Successful Show — caller scores 0.<br>';
     }
@@ -149,6 +150,14 @@ export function renderGameScreen(state, { onCardSelect }) {
     discardEl.textContent = '—';
   }
   $('#deck-count').textContent = room.deckCount;
+
+  const logsEl = $('#game-logs');
+  if (logsEl) {
+    logsEl.innerHTML = (room.logs || [])
+      .map((log) => `<div class="log-entry">${log}</div>`)
+      .join('');
+    logsEl.scrollTop = logsEl.scrollHeight;
+  }
 
   const opponentsEl = $('#opponents');
   opponentsEl.innerHTML = '';
