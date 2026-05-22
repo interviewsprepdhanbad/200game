@@ -27,6 +27,7 @@ export const MAX_PLAYERS_PER_ROOM = 8;
 export const MIN_PLAYERS_TO_START = 2;
 export const PLAYER_NAME_MAX_LENGTH = 20;
 export const ROOM_CODE_LENGTH = 6;
+export const DEFAULT_TURN_TIME = 30;
 
 export const GAME_PHASE = {
   LOBBY: 'lobby',
