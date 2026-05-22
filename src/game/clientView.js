@@ -61,5 +61,7 @@ export function toClientRoomState(room, viewerId) {
     winner: room.winner ? { id: room.winner.id, name: room.winner.name } : null,
     lastAction: sanitizeLastAction(room.lastAction, viewerId),
     logs: room.logs ?? [],
+    turnTimeLimit: room.turnTimeLimit,
+    turnStartTime: room.turnStartTime,
   };
 }
