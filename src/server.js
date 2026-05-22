@@ -18,15 +18,6 @@ const emitRoomState = createRoomBroadcaster(io, roomService);
 
 registerSocketHandlers(io, roomService, emitRoomState);
 
-// Global timer to handle turn timeouts across all rooms
-setInterval(() => {
-  const roomCodes = roomStore.getAllCodes?.() || []; 
-  for (const code of roomCodes) {
-    roomService.handleTimeout(code);
-    emitRoomState(code);
-  }
-}, 1000);
-
 server.listen(config.port, config.host, () => {
   console.log(`Game 200 — http://localhost:${config.port}`);
   if (config.host === '0.0.0.0') {

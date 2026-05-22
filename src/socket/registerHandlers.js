@@ -74,10 +74,10 @@ export function registerSocketHandlers(io, roomService, emitRoomState) {
       }
     });
 
-    socket.on('startGame', (payload, callback) => {
+    socket.on('startGame', (_payload, callback) => {
       if (!requireSocketRoom(socket, roomService, callback)) return;
 
-      const result = roomService.startGame(socket.data.roomCode, socket.data.playerId, payload);
+      const result = roomService.startGame(socket.data.roomCode, socket.data.playerId);
       if (!result.ok) {
         callback?.({ ok: false, error: result.error });
         return;

@@ -60,8 +60,6 @@ export function renderLobbyScreen(state) {
   const roundEnd = room.phase === GAME_PHASE.ROUND_END;
   const finished = room.phase === GAME_PHASE.FINISHED;
 
-  $('#lobby-options').classList.toggle('hidden', playing || roundEnd || finished);
-  
   $('#btn-start').classList.toggle('hidden', playing || roundEnd || finished);
   $('#btn-next-round').classList.toggle('hidden', !roundEnd);
   $('#btn-reset-game').classList.toggle('hidden', !finished);
