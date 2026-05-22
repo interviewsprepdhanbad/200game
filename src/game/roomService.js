@@ -72,7 +72,17 @@ function beginRound(room) {
 
   const starter = room.deck.pop();
   room.discardPile.push(starter);
-  room.currentTurnPlayerId = active[0]?.id ?? null;
+
+  // Determine who starts this round
+  if (room.roundNumber === 1) {
+    // First round: host starts
+    room.currentTurnPlayerId = room.players.find(p => p.isHost)?.id ?? active[0]?.id ?? null;
+  } else if (room.lastRoundWinnerId) {
+    // Subsequent rounds: player with lowest points (0) starts
+    room.currentTurnPlayerId = room.lastRoundWinnerId;
+  } else {
+    room.currentTurnPlayerId = active[0]?.id ?? null;
+  }
 }
 
 function checkWinner(room) {
@@ -188,12 +198,9 @@ export class RoomService {
     return success(room);
   }
 
-  startGame(code, hostId) {
+  startGame(code, playerId) {
     const room = this.getRoom(code);
     if (!room) return failure('Room not found');
-
-    const hostCheck = requireHost(room, hostId);
-    if (hostCheck) return hostCheck;
 
     if (room.players.length < MIN_PLAYERS_TO_START) {
       return failure('Need at least 2 players');
@@ -331,6 +338,18 @@ export class RoomService {
 
     const { caught, results, lowestTotal, lowestPlayerIds } = resolveShow(hands);
 
+    // Track who starts the next round:
+    // 1. If not caught, caller starts (they got 0).
+    // 2. If caught, anyone who got 0 starts.
+    // 3. If multiple 0s, prefer the caller if they were among them (not possible if caught), 
+    //    otherwise just pick the first one from the results who got 0.
+    const winners = results.filter(r => r.roundPoints === 0).map(r => r.playerId);
+    if (!caught) {
+      room.lastRoundWinnerId = playerId;
+    } else {
+      room.lastRoundWinnerId = winners[0] || active[0].id;
+    }
+
     for (const result of results) {
       const p = room.players.find((pl) => pl.id === result.playerId);
       if (p) {
@@ -372,12 +391,9 @@ export class RoomService {
     return success(room);
   }
 
-  nextRound(code, hostId) {
+  nextRound(code, playerId) {
     const room = this.getRoom(code);
     if (!room) return failure('Room not found');
-
-    const hostCheck = requireHost(room, hostId);
-    if (hostCheck) return hostCheck;
 
     if (room.phase !== GAME_PHASE.ROUND_END) {
       return failure('Round not finished');
@@ -396,12 +412,9 @@ export class RoomService {
     return success(room);
   }
 
-  resetGame(code, hostId) {
+  resetGame(code, playerId) {
     const room = this.getRoom(code);
     if (!room) return failure('Room not found');
-
-    const hostCheck = requireHost(room, hostId);
-    if (hostCheck) return hostCheck;
 
     if (room.phase !== GAME_PHASE.FINISHED) {
       return failure('Game is not finished');
@@ -413,7 +426,8 @@ export class RoomService {
     room.showdown = null;
     room.lastAction = null;
     room.turnCount = 0;
-    room.logs = ['Game reset by host'];
+    room.logs = ['Game reset'];
+    room.lastRoundWinnerId = null;
 
     for (const player of room.players) {
       player.score = 0;

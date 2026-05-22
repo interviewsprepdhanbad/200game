@@ -70,8 +70,9 @@ export function resolveShow(allHands) {
   const lowestOpponent = Math.min(
     ...allHands.filter((h) => !h.isCaller).map((h) => handTotal(h.hand))
   );
+  // Caught only if someone has STRICTLY less than the caller
   const caught = allHands.some(
-    (h) => !h.isCaller && handTotal(h.hand) <= callerTotal
+    (h) => !h.isCaller && handTotal(h.hand) < callerTotal
   );
 
   if (!caught) {

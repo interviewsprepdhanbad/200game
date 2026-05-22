@@ -60,18 +60,18 @@ export function renderLobbyScreen(state) {
   const roundEnd = room.phase === GAME_PHASE.ROUND_END;
   const finished = room.phase === GAME_PHASE.FINISHED;
 
-  $('#btn-start').classList.toggle('hidden', !host || playing || roundEnd || finished);
-  $('#btn-next-round').classList.toggle('hidden', !host || !roundEnd);
-  $('#btn-reset-game').classList.toggle('hidden', !host || !finished);
+  $('#btn-start').classList.toggle('hidden', playing || roundEnd || finished);
+  $('#btn-next-round').classList.toggle('hidden', !roundEnd);
+  $('#btn-reset-game').classList.toggle('hidden', !finished);
   $('#lobby-hint').classList.toggle(
     'hidden',
-    (host && room.phase === GAME_PHASE.LOBBY) || roundEnd || finished
+    room.phase === GAME_PHASE.LOBBY || roundEnd || finished
   );
   $('#lobby-hint').textContent =
     room.phase === GAME_PHASE.LOBBY
-      ? 'Waiting for host to start…'
+      ? 'Waiting to start…'
       : room.phase === GAME_PHASE.ROUND_END
-        ? 'Host: tap Next Round to continue'
+        ? 'Tap Next Round to continue'
         : '';
 
   const showdownEl = $('#showdown-summary');
@@ -81,9 +81,9 @@ export function renderLobbyScreen(state) {
     const caller = room.players.find((p) => p.id === s.callerId);
     let html = `<strong>Showdown</strong> — ${caller?.name || 'Player'} called Show (${s.callerPoints} pts)<br>`;
     if (s.caught) {
-      html += `<span class="caught">Caught! Caller was at ${s.callerPoints} pts but someone has less. Caller adds 50 pts.</span><br>`;
+      html += `<span class="caught">Caught! Someone has STRICTLY less than ${s.callerPoints} pts. Caller adds 50 pts.</span><br>`;
     } else {
-      html += 'Successful Show — caller scores 0.<br>';
+      html += `Successful Show — caller scores 0 (ties are safe).<br>`;
     }
     for (const h of s.hands) {
       const pl = room.players.find((p) => p.id === h.playerId);
