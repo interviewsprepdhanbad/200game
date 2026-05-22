@@ -41,6 +41,7 @@ export class GameApp {
     $('#auth-form').addEventListener('submit', (event) => this.onAuthSubmit(event));
     $('#btn-start').addEventListener('click', () => this.emitAction('startGame'));
     $('#btn-next-round').addEventListener('click', () => this.emitAction('nextRound'));
+    $('#btn-reset-game').addEventListener('click', () => this.emitAction('resetGame'));
     $('#btn-show').addEventListener('click', () => this.onCallShow());
     $('#btn-drop-only').addEventListener('click', () => this.submitDrop('none'));
     $('#btn-draw-deck').addEventListener('click', () => this.submitDrop('deck'));

@@ -327,6 +327,32 @@ input[type='text'] {
   color: var(--muted);
 }
 
+.logs-container {
+  flex-shrink: 0;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  margin: 8px 0;
+  padding: 6px;
+  max-height: 80px;
+  overflow-y: auto;
+  border: 1px solid var(--surface2);
+}
+
+.logs {
+  font-size: 0.7rem;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.log-entry {
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-entry:last-child {
+  border-bottom: none;
+}
+
 .hand-area {
   flex-shrink: 0;
   border-top: 1px solid var(--surface2);
@@ -434,6 +460,12 @@ input[type='text'] {
 .card.joker {
   background: linear-gradient(135deg, #4a2a6a, #2a1a40);
   color: #f0e0ff;
+  font-size: 0.6rem;
+}
+
+.card.joker .rank {
+  font-size: 0.55rem;
+  letter-spacing: 0.05em;
 }
 
 .card.rank-sm {

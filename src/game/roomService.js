@@ -121,6 +121,7 @@ export class RoomService {
       lastAction: null,
       showdown: null,
       winner: null,
+      logs: [],
     };
     this.store.set(room);
     return success(room);
@@ -238,6 +239,11 @@ export class RoomService {
       }
       player.hand = player.hand.filter((c) => !dropIds.includes(c.id));
       room.discardPile.push(...dropCards);
+      
+      const logMsg = `${player.name} dropped ${dropCards.map(c => c.isJoker ? 'Joker' : c.rank).join(', ')} (no draw)`;
+      room.logs.push(logMsg);
+      if (room.logs.length > 10) room.logs.shift();
+
       room.lastAction = {
         type: 'dropSwap',
         playerId,
@@ -269,6 +275,10 @@ export class RoomService {
         return failure('Deck is empty — not enough cards in discard to reshuffle');
       }
       drawn = room.deck.pop();
+      // Auto-replenish if empty after draw so next player sees cards
+      if (room.deck.length === 0) {
+        replenishDeckFromDiscard(room.deck, room.discardPile);
+      }
     } else if (drawFrom === DRAW_SOURCE.DISCARD) {
       // drawn already taken before drops were added to the pile
     } else {
@@ -276,6 +286,11 @@ export class RoomService {
     }
 
     player.hand.push(drawn);
+
+    const logMsg = `${player.name} dropped ${dropCards.map(c => c.isJoker ? 'Joker' : c.rank).join(', ')} & drew from ${drawFrom}`;
+    room.logs.push(logMsg);
+    if (room.logs.length > 10) room.logs.shift();
+
     room.lastAction = {
       type: 'dropSwap',
       playerId,
@@ -325,9 +340,15 @@ export class RoomService {
       }
     }
 
+    const callerPoints = hands.find(h => h.isCaller)?.hand ? handTotal(hands.find(h => h.isCaller).hand) : 0;
+    const logMsg = `${player.name} called SHOW (${callerPoints} pts) — ${caught ? 'CAUGHT!' : 'SUCCESS!'}`;
+    room.logs.push(logMsg);
+    if (room.logs.length > 10) room.logs.shift();
+
     room.phase = GAME_PHASE.ROUND_END;
     room.showdown = {
       callerId: playerId,
+      callerPoints,
       caught,
       results,
       lowestCatchers: caught
@@ -372,6 +393,35 @@ export class RoomService {
     room.roundNumber += 1;
     room.phase = GAME_PHASE.PLAYING;
     beginRound(room);
+    return success(room);
+  }
+
+  resetGame(code, hostId) {
+    const room = this.getRoom(code);
+    if (!room) return failure('Room not found');
+
+    const hostCheck = requireHost(room, hostId);
+    if (hostCheck) return hostCheck;
+
+    if (room.phase !== GAME_PHASE.FINISHED) {
+      return failure('Game is not finished');
+    }
+
+    room.phase = GAME_PHASE.LOBBY;
+    room.roundNumber = 0;
+    room.winner = null;
+    room.showdown = null;
+    room.lastAction = null;
+    room.turnCount = 0;
+    room.logs = ['Game reset by host'];
+
+    for (const player of room.players) {
+      player.score = 0;
+      player.eliminated = false;
+      player.hand = [];
+      player.roundPoints = null;
+    }
+
     return success(room);
   }
 }

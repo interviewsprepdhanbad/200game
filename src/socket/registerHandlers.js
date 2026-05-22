@@ -111,6 +111,18 @@ export function registerSocketHandlers(io, roomService, emitRoomState) {
       emitRoomState(socket.data.roomCode);
     });
 
+    socket.on('resetGame', (_payload, callback) => {
+      if (!requireSocketRoom(socket, roomService, callback)) return;
+
+      const result = roomService.resetGame(socket.data.roomCode, socket.data.playerId);
+      if (!result.ok) {
+        callback?.({ ok: false, error: result.error });
+        return;
+      }
+      callback?.({ ok: true });
+      emitRoomState(socket.data.roomCode);
+    });
+
     socket.on('disconnect', () => {
       const { roomCode, playerId } = socket.data;
       if (!roomCode || !playerId) return;

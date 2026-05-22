@@ -36,6 +36,7 @@
         <p id="lobby-hint" class="hint">Waiting for host to start…</p>
         <button id="btn-start" class="btn primary hidden">Start Game</button>
         <button id="btn-next-round" class="btn primary hidden">Next Round</button>
+        <button id="btn-reset-game" class="btn secondary hidden">Start New Game</button>
       </div>
       <div id="showdown-summary" class="panel showdown hidden"></div>
     </section>
@@ -62,6 +63,10 @@
       </div>
 
       <div id="opponents" class="opponents"></div>
+
+      <div class="logs-container">
+        <div id="game-logs" class="logs"></div>
+      </div>
 
       <div class="hand-area">
         <p class="hand-label">Your hand <span id="hand-total" class="muted"></span></p>
