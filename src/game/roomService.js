@@ -132,8 +132,51 @@ export class RoomService {
       showdown: null,
       winner: null,
       logs: [],
+      turnTimeLimit: 30, // Default 30s
+      turnStartTime: null,
     };
     this.store.set(room);
+    return success(room);
+  }
+
+  leaveRoom(code, playerId) {
+    const room = this.getRoom(code);
+    if (!room) return success(null);
+
+    const playerIdx = room.players.findIndex((p) => p.id === playerId);
+    if (playerIdx === -1) return success(room);
+
+    const wasHost = room.players[playerIdx].isHost;
+    room.players.splice(playerIdx, 1);
+
+    if (room.players.length === 0) {
+      this.store.delete(code);
+      return success(null);
+    }
+
+    if (wasHost) {
+      const nextHost = room.players.find((p) => p.connected);
+      if (nextHost) nextHost.isHost = true;
+    }
+
+    if (room.phase === GAME_PHASE.PLAYING) {
+      const active = room.players.filter((p) => !p.eliminated && p.connected);
+      if (active.length < 2) {
+        room.phase = GAME_PHASE.FINISHED;
+        room.winner = active[0] ?? null;
+      } else if (room.currentTurnPlayerId === playerId) {
+        const activeIdx = active.findIndex((p) => p.id === playerId);
+        // Advance turn if the leaving player was active
+        let idx = room.players.filter(p => !p.eliminated && p.connected).findIndex(p => p.id === room.currentTurnPlayerId);
+        // Re-using advanceTurn logic
+        const actives = room.players.filter(p => !p.eliminated && p.connected);
+        if (actives.length) {
+           room.currentTurnPlayerId = actives[0].id; // Reset to first available
+        }
+        room.turnStartTime = Date.now();
+      }
+    }
+
     return success(room);
   }
 
@@ -198,7 +241,7 @@ export class RoomService {
     return success(room);
   }
 
-  startGame(code, playerId) {
+  startGame(code, playerId, options = {}) {
     const room = this.getRoom(code);
     if (!room) return failure('Room not found');
 
@@ -206,9 +249,14 @@ export class RoomService {
       return failure('Need at least 2 players');
     }
 
+    if (options.turnTimeLimit) {
+      room.turnTimeLimit = parseInt(options.turnTimeLimit, 10);
+    }
+
     room.phase = GAME_PHASE.PLAYING;
     room.roundNumber = 1;
     beginRound(room);
+    room.turnStartTime = Date.now();
     return success(room);
   }
 
@@ -260,6 +308,7 @@ export class RoomService {
         drawnCard: null,
       };
       advanceTurn(room);
+      room.turnStartTime = Date.now();
       checkWinner(room);
       return success(room);
     }
@@ -308,6 +357,7 @@ export class RoomService {
     };
 
     advanceTurn(room);
+    room.turnStartTime = Date.now();
     checkWinner(room);
     return success(room);
   }
@@ -409,7 +459,42 @@ export class RoomService {
     room.roundNumber += 1;
     room.phase = GAME_PHASE.PLAYING;
     beginRound(room);
+    room.turnStartTime = Date.now();
     return success(room);
+  }
+
+  handleTimeout(code) {
+    const room = this.getRoom(code);
+    if (!room || room.phase !== GAME_PHASE.PLAYING) return;
+
+    const startTime = room.turnStartTime;
+    const limit = room.turnTimeLimit;
+    if (!startTime || !limit) return;
+
+    const elapsed = (Date.now() - startTime) / 1000;
+    if (elapsed < limit) return;
+
+    const player = currentPlayer(room);
+    if (!player) return;
+
+    // Find highest point card to drop
+    const hand = [...player.hand];
+    if (hand.length === 0) return;
+    
+    const sorted = hand.sort((a, b) => {
+      const pts = (c) => {
+        if (c.isJoker) return 0;
+        if (c.rank === 'A') return 1;
+        if (['J', 'Q', 'K'].includes(c.rank)) return 10;
+        return parseInt(c.rank, 10);
+      };
+      return pts(b) - pts(a);
+    });
+
+    const dropId = sorted[0].id;
+    this.dropAndSwap(code, player.id, [dropId], DRAW_SOURCE.DECK);
+    room.logs.push(`${player.name} turn timed out — auto-played.`);
+    if (room.logs.length > 10) room.logs.shift();
   }
 
   resetGame(code, playerId) {

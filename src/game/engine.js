@@ -76,11 +76,15 @@ export function resolveShow(allHands) {
   );
 
   if (!caught) {
+    const tiedPlayerIds = allHands
+      .filter((h) => !h.isCaller && handTotal(h.hand) === callerTotal)
+      .map((h) => h.playerId);
+
     return {
       caught: false,
       results: allHands.map((h) => ({
         playerId: h.playerId,
-        roundPoints: h.isCaller ? 0 : handTotal(h.hand),
+        roundPoints: (h.isCaller || (tiedPlayerIds.includes(h.playerId))) ? 0 : handTotal(h.hand),
       })),
     };
   }

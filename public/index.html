@@ -27,13 +27,25 @@
     <!-- Lobby -->
     <section id="screen-lobby" class="screen">
       <header class="top-bar">
-        <span class="room-label">Room <strong id="lobby-room-code"></strong></span>
+        <div class="header-row">
+          <span class="room-label">Room <strong id="lobby-room-code"></strong></span>
+          <button id="btn-exit-lobby" class="btn-text">Exit</button>
+        </div>
         <span id="lobby-phase" class="badge">Lobby</span>
       </header>
       <div class="panel flex-grow">
         <h2>Players</h2>
         <ul id="player-list" class="player-list"></ul>
-        <p id="lobby-hint" class="hint">Waiting for host to start…</p>
+        
+        <div id="lobby-options" class="lobby-options hidden">
+          <label>Turn Timer</label>
+          <div class="toggle-group">
+            <button class="btn-toggle active" data-value="30">30s</button>
+            <button class="btn-toggle" data-value="60">60s</button>
+          </div>
+        </div>
+
+        <p id="lobby-hint" class="hint">Waiting to start…</p>
         <button id="btn-start" class="btn primary hidden">Start Game</button>
         <button id="btn-next-round" class="btn primary hidden">Next Round</button>
         <button id="btn-reset-game" class="btn secondary hidden">Start New Game</button>
@@ -44,9 +56,15 @@
     <!-- Game Board -->
     <section id="screen-game" class="screen">
       <header class="top-bar">
-        <div class="scores-strip" id="scores-strip"></div>
+        <div class="header-row">
+          <div class="scores-strip" id="scores-strip"></div>
+          <button id="btn-exit-game" class="btn-text">Exit</button>
+        </div>
         <div class="turn-bar">
-          <span id="turn-indicator">Waiting…</span>
+          <div class="turn-info">
+            <span id="turn-indicator">Waiting…</span>
+            <span id="turn-timer" class="timer-badge"></span>
+          </div>
           <span id="deck-info" class="muted"></span>
         </div>
       </header>
