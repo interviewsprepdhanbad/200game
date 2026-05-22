@@ -25,10 +25,6 @@ export class RoomStore {
     return this.#rooms.delete(this.normalizeCode(code));
   }
 
-  getAllCodes() {
-    return Array.from(this.#rooms.keys());
-  }
-
   /** @param {(room: object) => boolean} predicate */
   findAvailableCode(generateCode, predicate) {
     let code;

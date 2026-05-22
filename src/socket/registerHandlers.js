@@ -58,26 +58,10 @@ export function registerSocketHandlers(io, roomService, emitRoomState) {
       emitRoomState(room.code);
     });
 
-    socket.on('leaveRoom', (_payload, callback) => {
-      const { roomCode, playerId } = socket.data;
-      if (!roomCode || !playerId) return;
-
-      const result = roomService.leaveRoom(roomCode, playerId);
-      socket.leave(roomCode);
-      socket.data.roomCode = null;
-      
-      callback?.({ ok: true });
-      if (result.ok && result.value) {
-        emitRoomState(roomCode);
-      } else {
-        io.to(roomCode).emit('roomClosed');
-      }
-    });
-
-    socket.on('startGame', (payload, callback) => {
+    socket.on('startGame', (_payload, callback) => {
       if (!requireSocketRoom(socket, roomService, callback)) return;
 
-      const result = roomService.startGame(socket.data.roomCode, socket.data.playerId, payload);
+      const result = roomService.startGame(socket.data.roomCode, socket.data.playerId);
       if (!result.ok) {
         callback?.({ ok: false, error: result.error });
         return;
