@@ -23,7 +23,10 @@ export function renderLobbyScreen(state) {
   const { room, myPlayerId } = state;
   showScreen('lobby');
 
-  $('#lobby-room-code').textContent = room.code;
+  const shareUrl = `https://200game-production.up.railway.app?room=${room.code}`;
+  const roomCodeEl = $('#lobby-room-code');
+  roomCodeEl.innerHTML = `<a href="${shareUrl}" target="_blank" class="room-link">${room.code}</a>`;
+  roomCodeEl.title = 'Click to open shareable link';
   $('#lobby-phase').textContent =
     room.phase === GAME_PHASE.LOBBY
       ? 'Lobby'
@@ -106,7 +109,7 @@ export function renderLobbyScreen(state) {
   }
 }
 
-export function renderGameScreen(state, { onCardSelect }) {
+export function renderGameScreen(state, { onCardSelect, onRemovePlayer }) {
   const { room, myPlayerId, selectedCardIds, isAnimating } = state;
 
   if (
@@ -153,8 +156,12 @@ export function renderGameScreen(state, { onCardSelect }) {
 
   const logsEl = $('#game-logs');
   if (logsEl) {
-    logsEl.innerHTML = (room.logs || [])
-      .map((log) => `<div class="log-entry">${log}</div>`)
+    const logs = room.logs || [];
+    logsEl.innerHTML = logs
+      .map((log, index) => {
+        const isLatest = index === logs.length - 1;
+        return `<div class="log-entry ${isLatest ? 'latest' : ''}">${log}</div>`;
+      })
       .join('');
     logsEl.scrollTop = logsEl.scrollHeight;
   }
@@ -167,6 +174,24 @@ export function renderGameScreen(state, { onCardSelect }) {
     div.className = 'opponent';
     if (player.id === room.currentTurnPlayerId) div.classList.add('turn');
     div.innerHTML = `<strong>${player.name}</strong> — ${player.score} pts`;
+    if (!player.connected) {
+      const away = document.createElement('div');
+      away.style.fontSize = '0.6rem';
+      away.style.color = 'var(--danger)';
+      away.textContent = '(away)';
+      div.appendChild(away);
+
+      if (player.id === room.currentTurnPlayerId) {
+        const elapsed = Date.now() - (room.turnStartedAt || 0);
+        if (elapsed > 60000) {
+          const kickBtn = document.createElement('button');
+          kickBtn.textContent = 'Kick Away Player';
+          kickBtn.className = 'btn btn-kick';
+          kickBtn.onclick = () => onRemovePlayer(player.id);
+          div.appendChild(kickBtn);
+        }
+      }
+    }
     const cards = document.createElement('div');
     cards.className = 'cards';
     cards.textContent = `${player.handCount ?? player.hand?.length ?? 0} cards`;

@@ -385,13 +385,13 @@ input[type='text'] {
   border-radius: 8px;
   margin: 8px 0;
   padding: 6px;
-  max-height: 80px;
+  max-height: 140px;
   overflow-y: auto;
   border: 1px solid var(--surface2);
 }
 
 .logs {
-  font-size: 0.7rem;
+  font-size: 0.8rem;
   color: var(--muted);
   line-height: 1.4;
 }
@@ -399,6 +399,32 @@ input[type='text'] {
 .log-entry {
   padding: 2px 0;
   border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.log-entry.latest {
+  color: #ffeb3b;
+  font-weight: 500;
+}
+
+.room-link {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+
+.btn-kick {
+  background: var(--danger);
+  color: #fff;
+  padding: 4px 8px;
+  font-size: 0.65rem;
+  margin-top: 6px;
+  width: 100%;
+  border-radius: 4px;
+}
+
+.opponent.turn {
+  border-color: var(--accent);
+  background: rgba(var(--accent-rgb), 0.1);
 }
 
 .log-entry:last-child {

@@ -31,7 +31,7 @@ function makePlayer(id, name, isHost = false) {
 }
 
 function activePlayers(room) {
-  return room.players.filter((p) => !p.eliminated && p.connected);
+  return room.players.filter((p) => !p.eliminated);
 }
 
 function currentPlayer(room) {
@@ -49,6 +49,7 @@ function advanceTurn(room) {
   if (idx < 0) idx = 0;
   room.currentTurnPlayerId = active[(idx + 1) % active.length].id;
   room.turnCount += 1;
+  room.turnStartedAt = Date.now();
 }
 
 function beginRound(room) {
@@ -83,6 +84,7 @@ function beginRound(room) {
   } else {
     room.currentTurnPlayerId = active[0]?.id ?? null;
   }
+  room.turnStartedAt = Date.now();
 }
 
 function checkWinner(room) {
@@ -153,7 +155,7 @@ export class RoomService {
     }
 
     if (wasHost) {
-      const nextHost = room.players.find((p) => p.connected);
+      const nextHost = room.players.find((p) => p.connected) || room.players[0];
       if (nextHost) nextHost.isHost = true;
     }
 
@@ -214,7 +216,7 @@ export class RoomService {
     }
 
     if (!room.players.some((p) => p.isHost && p.connected)) {
-      const nextHost = room.players.find((p) => p.connected);
+      const nextHost = room.players.find((p) => p.connected) || room.players[0];
       if (nextHost) nextHost.isHost = true;
     }
 
@@ -470,5 +472,26 @@ export class RoomService {
     }
 
     return success(room);
+  }
+
+  removePlayer(code, playerId, targetId) {
+    const room = this.getRoom(code);
+    if (!room) return failure('Room not found');
+
+    const target = room.players.find((p) => p.id === targetId);
+    if (!target) return failure('Player not found');
+
+    if (target.connected) return failure('Cannot remove a connected player');
+
+    if (room.phase === GAME_PHASE.PLAYING && room.currentTurnPlayerId === targetId) {
+      const elapsed = Date.now() - (room.turnStartedAt || 0);
+      if (elapsed < 60000) {
+        return failure('Wait for 60 seconds of inactivity during their turn');
+      }
+    } else {
+      return failure('Can only remove away player during their turn');
+    }
+
+    return this.leaveRoom(code, targetId);
   }
 }

@@ -31,10 +31,20 @@ export class GameApp {
   }
 
   init() {
+    this.handleQueryParams();
     this.bindUi();
     this.connectSocket();
     this.prefillAuthForm();
     this.maybeShowReconnectOverlay();
+  }
+
+  handleQueryParams() {
+    const params = new URLSearchParams(window.location.search);
+    const room = params.get('room');
+    if (room) {
+      const codeInput = $('#room-code');
+      if (codeInput) codeInput.value = room.toUpperCase();
+    }
   }
 
   bindUi() {
@@ -87,6 +97,10 @@ export class GameApp {
       onCardSelect: (cardId, hand) => {
         toggleCardSelection(this.state, cardId, hand);
         this.render();
+      },
+      onRemovePlayer: (targetId) => {
+        if (!confirm('Remove this away player from the game?')) return;
+        this.emitAction('removePlayer', { targetId });
       },
     });
   }
