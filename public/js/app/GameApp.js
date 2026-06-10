@@ -23,6 +23,7 @@ import {
   captureDropAnimationTargets,
   runDropAnimation,
 } from '../game/dropAnimation.js';
+import { playEmojiAnimation } from '../ui/animations.js';
 
 export class GameApp {
   constructor() {
@@ -90,6 +91,7 @@ export class GameApp {
     });
     this.socket.on('roomState', (state) => this.handleRoomState(state));
     this.socket.on('roomClosed', () => this.handleRoomClosed());
+    this.socket.on('emojiThrown', (data) => this.handleEmojiThrown(data));
   }
 
   render() {
@@ -102,7 +104,29 @@ export class GameApp {
         if (!confirm('Remove this away player from the game?')) return;
         this.emitAction('removePlayer', { targetId });
       },
+      onSendEmoji: (targetId, emoji) => {
+        this.socket.emit('sendEmoji', { targetId, emoji });
+      },
     });
+  }
+
+  async handleEmojiThrown({ fromId, toId, emoji }) {
+    const fromEl =
+      fromId === this.state.myPlayerId
+        ? $('#player-hand')
+        : $(`.opponent[data-player-id="${fromId}"]`);
+    const toEl =
+      toId === this.state.myPlayerId
+        ? $('#player-hand')
+        : $(`.opponent[data-player-id="${toId}"]`);
+
+    if (!fromEl || !toEl) return;
+
+    await playEmojiAnimation(
+      fromEl.getBoundingClientRect(),
+      toEl.getBoundingClientRect(),
+      emoji
+    );
   }
 
   applyRoomState(state) {

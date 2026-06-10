@@ -155,6 +155,12 @@ export function registerSocketHandlers(io, roomService, emitRoomState) {
       emitRoomState(socket.data.roomCode);
     });
 
+    socket.on('sendEmoji', ({ targetId, emoji }) => {
+      const { roomCode, playerId } = socket.data;
+      if (!roomCode || !playerId || !targetId || !emoji) return;
+      io.to(roomCode).emit('emojiThrown', { fromId: playerId, toId: targetId, emoji });
+    });
+
     socket.on('disconnect', () => {
       const { roomCode, playerId } = socket.data;
       if (!roomCode || !playerId) return;

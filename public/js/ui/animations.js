@@ -103,3 +103,33 @@ export async function playDropAndDrawAnimation(opts) {
     incoming.remove();
   }
 }
+
+export async function playEmojiAnimation(fromRect, toRect, emoji) {
+  const layer = getFlyLayer();
+  const el = document.createElement('div');
+  el.className = 'flying-emoji';
+  el.textContent = emoji;
+  
+  // Start position
+  const from = centerOf(fromRect);
+  el.style.left = `${from.x - 20}px`;
+  el.style.top = `${from.y - 20}px`;
+  layer.appendChild(el);
+
+  const to = centerOf(toRect);
+  const dx = to.x - from.x;
+  const dy = to.y - from.y;
+  
+  // Fly animation
+  el.style.transition = 'transform 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+  
+  await new Promise(r => requestAnimationFrame(() => {
+    el.style.transform = `translate(${dx}px, ${dy}px) rotate(360deg) scale(1.5)`;
+    setTimeout(r, 600);
+  }));
+
+  // Impact effect
+  el.classList.add('emoji-impact');
+  await new Promise(r => setTimeout(r, 500));
+  el.remove();
+}

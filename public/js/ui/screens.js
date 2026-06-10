@@ -196,6 +196,26 @@ export function renderGameScreen(state, { onCardSelect, onRemovePlayer }) {
     cards.className = 'cards';
     cards.textContent = `${player.handCount ?? player.hand?.length ?? 0} cards`;
     div.appendChild(cards);
+
+    const actions = document.createElement('div');
+    actions.className = 'opponent-actions';
+    
+    const axeBtn = document.createElement('button');
+    axeBtn.className = 'btn-emoji';
+    axeBtn.textContent = '🪓';
+    axeBtn.title = 'Throw Axe';
+    axeBtn.onclick = () => handlers.onSendEmoji(player.id, '🪓');
+    
+    const poisonBtn = document.createElement('button');
+    poisonBtn.className = 'btn-emoji';
+    poisonBtn.textContent = '🧪';
+    poisonBtn.title = 'Throw Poison';
+    poisonBtn.onclick = () => handlers.onSendEmoji(player.id, '🧪');
+    
+    actions.append(axeBtn, poisonBtn);
+    div.appendChild(actions);
+
+    div.setAttribute('data-player-id', player.id);
     opponentsEl.appendChild(div);
   }
 
