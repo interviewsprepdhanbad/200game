@@ -412,14 +412,52 @@ input[type='text'] {
   text-underline-offset: 4px;
 }
 
-.btn-kick {
-  background: var(--danger);
-  color: #fff;
-  padding: 4px 8px;
-  font-size: 0.65rem;
+.opponent-actions {
+  display: flex;
+  gap: 4px;
   margin-top: 6px;
-  width: 100%;
+  justify-content: center;
+}
+
+.btn-emoji {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
   border-radius: 4px;
+  padding: 4px 6px;
+  cursor: pointer;
+  font-size: 1rem;
+  transition: transform 0.1s, background 0.1s;
+  line-height: 1;
+}
+
+.btn-emoji:hover {
+  background: rgba(255, 255, 255, 0.2);
+  transform: scale(1.1);
+}
+
+.btn-emoji:active {
+  transform: scale(0.9);
+}
+
+.flying-emoji {
+  position: fixed;
+  pointer-events: none;
+  z-index: 1000;
+  font-size: 2rem;
+  will-change: transform, opacity;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.emoji-impact {
+  animation: emojiImpact 0.5s ease-out forwards;
+}
+
+@keyframes emojiImpact {
+  0% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.5) rotate(20deg); opacity: 1; }
+  100% { transform: scale(1) rotate(0deg); opacity: 0; }
 }
 
 .opponent.turn {
