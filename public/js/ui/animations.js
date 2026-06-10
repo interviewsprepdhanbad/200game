@@ -91,7 +91,7 @@ export async function playDropAndDrawAnimation(opts) {
     flyers.forEach(({ el }) => el.remove());
   }
 
-  if (drawnCard && drawSourceRect.width > 0 && handRect.width > 0) {
+  if (drawFrom !== 'none' && drawnCard && drawSourceRect.width > 0 && handRect.width > 0) {
     const incoming = showDrawnFace ? renderCardFace(drawnCard) : renderCardBack();
     incoming.classList.add('flying-card');
     placeFlying(incoming, drawSourceRect);

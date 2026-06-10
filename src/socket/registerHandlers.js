@@ -139,6 +139,22 @@ export function registerSocketHandlers(io, roomService, emitRoomState) {
       emitRoomState(socket.data.roomCode);
     });
 
+    socket.on('removePlayer', ({ targetId }, callback) => {
+      if (!requireSocketRoom(socket, roomService, callback)) return;
+
+      const result = roomService.removePlayer(
+        socket.data.roomCode,
+        socket.data.playerId,
+        targetId
+      );
+      if (!result.ok) {
+        callback?.({ ok: false, error: result.error });
+        return;
+      }
+      callback?.({ ok: true });
+      emitRoomState(socket.data.roomCode);
+    });
+
     socket.on('disconnect', () => {
       const { roomCode, playerId } = socket.data;
       if (!roomCode || !playerId) return;
